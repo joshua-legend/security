@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signup & Login Test</title>
+</head>
+<body>
+<h1>회원가입</h1>
+<form id="signup-form">
+    <label for="signup-username">Username:</label>
+    <input type="text" id="signup-username" name="username" /><br /><br />
+
+    <label for="signup-password">Password:</label>
+    <input type="password" id="signup-password" name="password" /><br /><br />
+
+    <button type="button" onclick="signup()">회원가입</button>
+</form>
+
+<h1>로그인</h1>
+<form id="login-form">
+    <label for="login-username">Username:</label>
+    <input type="text" id="login-username" name="username" /><br /><br />
+
+    <label for="login-password">Password:</label>
+    <input type="password" id="login-password" name="password" /><br /><br />
+
+    <button type="button" onclick="login()">로그인</button>
+</form>
+
+<button type="button" onclick="getCarList()">자동차 리스트 가져오기</button>
+
+<p id="response"></p>
+
+<script>
+    // 회원가입 함수
+    function signup() {
+      // 회원가입 폼에서 입력된 데이터 가져오기
+      const username = document.getElementById("signup-username").value;
+      const password = document.getElementById("signup-password").value;
+
+      // 회원가입 데이터 객체
+      const data = {
+        username: username,
+        password: password,
+      };
+
+      // POST 요청을 스프링 부트 서버의 회원가입 엔드포인트로 전송
+      fetch("http://localhost:8080/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+        .then((response) => response.text())
+        .then((result) => {
+          document.getElementById("response").innerText =
+            "회원가입 결과: " + result;
+        })
+        .catch((error) => {
+          document.getElementById("response").innerText =
+            "회원가입 중 오류 발생: " + error;
+        });
+    }
+
+    // 로그인 함수
+    function login() {
+      // 로그인 폼에서 입력된 데이터 가져오기
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+
+      // 로그인 데이터 객체
+      const data = {
+        username: username,
+        password: password,
+      };
+
+      // POST 요청을 스프링 부트 서버의 로그인 엔드포인트로 전송
+      fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.json(); // 응답이 OK면 JWT를 포함한 JSON 데이터 반환
+          } else {
+            throw new Error("로그인 실패");
+          }
+        })
+        .then((data) => {
+          // JWT 토큰을 로컬 스토리지에 저장
+          localStorage.setItem("jwt", data.jwt);
+          console.log("로그인 성공, JWT 저장:", data.jwt); // JWT를 콘솔에 출력
+        })
+        .catch((error) => {
+          console.error("에러 발생:", error.message); // 로그인 실패 시 에러 메시지 출력
+        });
+    }
+
+    function getCarList() {
+      const token = localStorage.getItem("jwt"); // 로컬 스토리지에서 JWT 토큰 가져오기
+
+      if (token) {
+        fetch("http://localhost:8080/cars", {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer " + token, // JWT를 Authorization 헤더에 추가
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              return response.json(); // 응답이 OK면 JSON 데이터 반환
+            } else {
+              throw new Error("JWT 토큰이 유효하지 않습니다.");
+            }
+          })
+          .then((data) => {
+            console.log("자동차 리스트:", data); // 자동차 리스트 콘솔에 출력
+          })
+          .catch((error) => {
+            console.error("에러 발생:", error.message); // 에러 발생 시 콘솔에 에러 메시지 출력
+          });
+      } else {
+        console.log("JWT 없음"); // JWT 토큰이 없을 때 콘솔에 출력
+      }
+    }
+</script>
+</body>
+</html>
